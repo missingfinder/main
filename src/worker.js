@@ -1,58 +1,56 @@
-/**
- * 1. Create sql files
- * $ node init.js
- * 
- * 2. Upload init sql (free version)
- * $ for file in insert_missing_persons_*.sql; do
-    yes | wrangler d1 execute missing_db --remote --file="$file"
-    done
- */
+export default {
+    async fetch(request, env) {
+        if (!validate(request, env)) {
+            return new Response(JSON.stringify({ error: "Unauthorized access" }), {
+                status: 403,
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+        // 1. API에서 실종자 데이터 가져오기
+        const allRecords = await fetchMissingPersonsData(env);
+        console.log(allRecords);
 
-import fs from "fs";
-import dotenv from "dotenv";
-dotenv.config();
+        // 2. DB에서 현재 데이터 가져오기
+        const existingData = await getExistingDatabaseData(env);
+        console.log(existingData);
 
-const POLICE_AUTH_ID = process.env.POLICE_AUTH_ID
-const POLICE_AUTH_KEY = process.env.POLICE_AUTH_KEY
-const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY
-const SQL_BATCH_SIZE = 3;
+        // 3. newRecords와 deleteRowIDs 얻기 (changedRecords 포함)
+        let { newRecords, deleteRowIDs, insertedNames, deletedNames } = await processRecords(allRecords, existingData);
+
+        console.log(`NewRecords: ${newRecords}`);
+        console.log(`DeleteRowIDs: ${deleteRowIDs}`);
+
+        // 4. Kakao API를 newRecords에만 적용
+        await enrichWithCoordinates(newRecords);
+
+        // 5. DB 업데이트 실행 (삭제 후 삽입)
+        await updateDatabase(env, newRecords, deleteRowIDs);
+
+        // 6. 최종 결과 반환
+        return new Response(JSON.stringify({
+            message: "Database updated",
+            new_records_names: insertedNames,
+            deleted_records_names: deletedNames
+        }), { headers: { "Content-Type": "application/json" } });
+    },
+};
 
 
-async function main() {
-    console.log("🚀 실행 시작...");
 
-    // 1. API에서 실종자 데이터 가져오기
-    const allRecords = await fetchMissingPersonsData();
-
-    // 2. DB에서 현재 데이터 가져오기 (로컬 실행이므로 빈 Map 리턴)
-    const existingData = new Map([]);
-
-    // 3. newRecords와 deleteRowIDs 얻기
-    let { newRecords, deleteRowIDs, insertedNames, deletedNames } = await processRecords(allRecords, existingData);
-
-    // 4. Kakao API를 newRecords에만 적용
-    await enrichWithCoordinates(newRecords);
-
-    // 5. SQL 파일 여러 개 생성
-    const sqlFiles = generateSQLFiles(newRecords, deleteRowIDs);
-
-    // 6. SQL 파일 저장
-    sqlFiles.forEach(({ fileName, sqlContent }) => {
-        fs.writeFileSync(fileName, sqlContent, "utf8");
-        console.log(`✅ SQL 파일 저장 완료: ${fileName}`);
-    });
-
-    console.log("✅ 모든 SQL 파일 생성 완료!");
+function validate(env) {
+    const url = new URL(request.url);
+    const requestPassword = url.searchParams.get("password");
+    return requestPassword && requestPassword === env.WORKER_SECRET_PASSWORD;
 }
 
 
 /**
  * 1. API에서 모든 실종자 데이터를 가져옴
  */
-async function fetchMissingPersonsData() {
+async function fetchMissingPersonsData(env) {
     const apiUrl = "https://www.safe182.go.kr/api/lcm/findChildList.do";
     const headers = { "Content-Type": "application/x-www-form-urlencoded" };
-    const defaultParams = { esntlId: POLICE_AUTH_ID, authKey: POLICE_AUTH_KEY, rowSize: "100" };
+    const defaultParams = { esntlId: env.POLICE_AUTH_ID, authKey: env.POLICE_AUTH_KEY, rowSize: "100" };
 
     let firstResponse = await fetch(apiUrl, {
         method: "POST",
@@ -98,9 +96,16 @@ async function fetchMissingPersonsData() {
     }
 }
 
+/**
+ * 2. DB에서 현재 저장된 모든 실종자의 ID, 해시값, 이름을 가져옴
+ */
+async function getExistingDatabaseData(env) {
+    const existingRows = await env.DB.prepare("SELECT id, name, data_hash FROM missing_persons").all();
+    return new Map(existingRows.results.map(row => [row.id, { hash: row.data_hash, name: row.name }]));
+}
 
 /**
- * 3. newRecords와 deleteRowIDs 얻기
+ * 3. 데이터 비교 후 newRecords와 deleteRowIDs 얻기
  */
 async function processRecords(allRecords, existingData) {
     let newRecords = [];
@@ -159,8 +164,8 @@ async function processRecords(allRecords, existingData) {
 /**
  * 4. Kakao API를 newRecords에만 적용
  */
-async function enrichWithCoordinates(records) {
-    const KAKAO_API_KEY = `KakaoAK ${KAKAO_REST_API_KEY}`;
+async function enrichWithCoordinates(records, env) {
+    const KAKAO_API_KEY = `KakaoAK ${env.KAKAO_REST_API_KEY}`;
     const DEFAULT_X = 126.9764;
     const DEFAULT_Y = 37.5867;
 
@@ -183,58 +188,57 @@ async function enrichWithCoordinates(records) {
 
     for (const record of records) {
         const coords = await fetchCoordinates(record.occrAdres);
+        record.incident_location = coords.address_name;
         record.incident_x = coords.x;
         record.incident_y = coords.y;
     }
 }
 
-
-// 5. SQL file generate to initialize
-function generateSQLFiles(newRecords, deleteRowIDs) {
-    let sqlFiles = [];
-    let fileIndex = 1;
-
-    if (deleteRowIDs.length > 0) {
-        let deleteSQL = `DELETE FROM missing_persons WHERE id IN (${deleteRowIDs.join(", ")});`;
-        sqlFiles.push({ fileName: `delete_missing_persons.sql`, sqlContent: deleteSQL });
-    }
-
-    let batchCount = Math.ceil(newRecords.length / SQL_BATCH_SIZE);
-
-    console.log(`BATCH SIZE = ${batchCount}`);
-
-    for (let i = 0; i < batchCount; i++) {
-        let startIdx = i * SQL_BATCH_SIZE;
-        let endIdx = startIdx + SQL_BATCH_SIZE;
-        let batch = newRecords.slice(startIdx, endIdx);
-
-        console.log(`i=${startIdx}, e=${endIdx}, Length: ${batch.length}`);
-
-        if (batch.length === 0) continue;
-
-        let insertValues = batch.map(record =>
-            `(${record.msspsnIdntfccd}, '${record.nm.replace(/'/g, "''")}', ${record.ageNow}, ${record.age}, '${record.occrde}', '${record.alldressingDscd}', '${record.writngTrgetDscd}', '${record.sexdstnDscd}', '${record.occrAdres.replace(/'/g, "''")}', ${record.incident_x}, ${record.incident_y}, ${escapeSQL(record.etcSpfeatr)}, ${record.tknphotoFile ? `'${record.tknphotoFile}'` : "NULL"}, '${record.data_hash}')`
-        ).join(",\n");
-
-        let sqlContent = `
-        INSERT INTO missing_persons (id, name, current_age, age_when_missing, incident_date, clothing_description, person_type, gender, incident_location, incident_x, incident_y, additional_features, photo_base64, data_hash)
-        VALUES 
-        ${insertValues};
-        `.trim();
-
-        let fileName = `insert_missing_persons_${fileIndex}.sql`;
-        sqlFiles.push({ fileName, sqlContent });
-        fileIndex++;
-    }
-
-    return sqlFiles;
-}
-
-
+/**
+ * 5. DB 업데이트 (삭제 후 삽입)
+ */
 function escapeSQL(value) {
     if (value === null || value === undefined || value.trim() === '') return "NULL";
     return `'${value.replace(/'/g, "''").replace(/\n/g, ' ').replace(/\r/g, '').replace(/\t/g, ' ')}'`;
 }
 
+async function updateDatabase(env, newRecords, deleteRowIDs) {
+    const BATCH_SIZE = 3;
 
-main().catch(console.error);
+    // Batch DELETE 처리
+    for (let i = 0; i < deleteRowIDs.length; i += BATCH_SIZE) {
+        let batch = deleteRowIDs.slice(i, i + BATCH_SIZE);
+        let placeholders = batch.map(() => "?").join(", ");
+        let deleteStmt = `DELETE FROM missing_persons WHERE id IN (${placeholders})`;
+        await env.DB.prepare(deleteStmt).bind(...batch).run();
+    }
+
+    // Batch INSERT 처리
+    for (let i = 0; i < newRecords.length; i += BATCH_SIZE) {
+        let batch = newRecords.slice(i, i + BATCH_SIZE);
+
+        let insertStmt = `
+        INSERT INTO missing_persons (id, name, current_age, age_when_missing, incident_date, clothing_description, person_type, gender, incident_location, incident_x, incident_y, additional_features, photo_base64, data_hash)
+        VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+        `;
+
+        let insertValues = batch.flatMap(record => [
+            record.msspsnIdntfccd,
+            escapeSQL(record.nm),
+            record.ageNow,
+            record.age,
+            escapeSQL(record.occrde),
+            escapeSQL(record.alldressingDscd),
+            escapeSQL(record.writngTrgetDscd),
+            escapeSQL(record.sexdstnDscd),
+            escapeSQL(record.occrAdres),
+            record.incident_x,
+            record.incident_y,
+            escapeSQL(record.etcSpfeatr),
+            record.tknphotoFile ? escapeSQL(record.tknphotoFile) : "NULL",
+            record.data_hash
+        ]);
+
+        await env.DB.prepare(insertStmt).bind(...insertValues).run();
+    }
+}
