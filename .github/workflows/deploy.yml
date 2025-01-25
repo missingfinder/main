@@ -10,28 +10,41 @@ jobs:
     name: Deploy Cloudflare Workers
     runs-on: ubuntu-latest
 
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      WORKER_SECRET_PASSWORD: ${{ secrets.WORKER_SECRET_PASSWORD }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Install Wrangler CLI
-        run: npm install -g wrangler
+        run: npm install -g wrangler@latest
+
+      - name: Debug GitHub Secrets
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ CLOUDFLARE_API_TOKEN is missing!"
+            exit 1
+          else
+            echo "✅ CLOUDFLARE_API_TOKEN is set."
+          fi
 
       - name: Deploy Workers
         run: |
           for i in $(seq 1 2); do
             WORKER_NAME="geo-missing-lookup$i"
-            echo "Deploying $WORKER_NAME"
+            echo "🚀 Deploying $WORKER_NAME"
             
-            # wrangler.toml 파일을 임시 수정하여 배포
+            # wrangler.toml 파일을 임시 수정하여 Worker 이름 변경
             sed -i "s/^name = .*/name = \"$WORKER_NAME\"/" src/geo-missing-lookup/wrangler.toml
             
-            # Worker 배포 (환경 변수 전달)
-            WORKER_SECRET_PASSWORD=${{ secrets.WORKER_SECRET_PASSWORD }} \
-            wrangler publish --config src/geo-missing-lookup/wrangler.toml
+            # Worker 배포 (환경 변수 사용)
+            wrangler deploy --config src/geo-missing-lookup/wrangler.toml
             
             # 원래대로 복구
             git checkout -- src/geo-missing-lookup/wrangler.toml
+
+            # API Rate Limit 방지 (1초 대기)
+            sleep 1
           done
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
