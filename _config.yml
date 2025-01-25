@@ -1,16 +1,15 @@
 title: Missing Person Finder
 description: 실종자 데이터를 Cloudflare Workers를 통해 수집 및 조회하는 프로젝트
-remote_theme: nattvara/jekyll-theme-chalk
+theme: jekyll-theme-minimal
 
 markdown: kramdown
 kramdown:
   math_engine: mathjax
   input: GFM
 
-include: ["_includes"]
-
-github:
-  is_project_page: false
-
 plugins:
-  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+show_downloads: false
+google_analytics: false
