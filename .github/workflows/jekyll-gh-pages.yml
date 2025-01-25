@@ -27,8 +27,13 @@ jobs:
           source: ./
           destination: ./_site
 
+      - name: Check _site folder contents
+        run: ls -la _site # _site 내부에 index.html이 생성되었는지 확인
+
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
 
   deploy:
     needs: build
