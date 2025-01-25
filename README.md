@@ -1,8 +1,3 @@
----
-layout: default
-title: Missing Person Finder
----
-
 # Missing Person Finder
 
 이 프로젝트는 실종자 데이터를 수집, 저장 및 조회하는 Cloudflare Workers 기반의 서비스입니다.
@@ -49,6 +44,10 @@ done
 
 
 ### Haversine 공식 (구면 코사인 법칙)
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
 
 두 좌표 $(\phi_1, \lambda_1)$, $(\phi_2, \lambda_2)$ 사이의 거리를 계산하는 공식은 다음과 같습니다.
 
