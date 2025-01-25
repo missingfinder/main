@@ -6,35 +6,41 @@ export default {
                 headers: { "Content-Type": "application/json" }
             });
         }
-        // 1. API에서 실종자 데이터 가져오기
-        const allRecords = await fetchMissingPersonsData(env);
-        console.log(allRecords);
-
-        // 2. DB에서 현재 데이터 가져오기
-        const existingData = await getExistingDatabaseData(env);
-        console.log(existingData);
-
-        // 3. newRecords와 deleteRowIDs 얻기 (changedRecords 포함)
-        let { newRecords, deleteRowIDs, insertedNames, deletedNames } = await processRecords(allRecords, existingData);
-
-        console.log(`NewRecords: ${newRecords}`);
-        console.log(`DeleteRowIDs: ${deleteRowIDs}`);
-
-        // 4. Kakao API를 newRecords에만 적용
-        await enrichWithCoordinates(newRecords);
-
-        // 5. DB 업데이트 실행 (삭제 후 삽입)
-        await updateDatabase(env, newRecords, deleteRowIDs);
-
-        // 6. 최종 결과 반환
-        return new Response(JSON.stringify({
-            message: "Database updated",
-            new_records_names: insertedNames,
-            deleted_records_names: deletedNames
-        }), { headers: { "Content-Type": "application/json" } });
+        console.log("HTTP 요청으로 데이터 갱신 시작");
+        const result = await process(env);
+        return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
     },
+
+    async scheduled(event, env) {
+        console.log("⏰ Scheduled Trigger");
+        await process(env);
+    }
 };
 
+async function process(env) {
+    console.log("시작: 실종자 데이터 처리");
+    const allRecords = await fetchMissingPersonsData(env);
+    console.log("API 데이터 수집 완료", allRecords.length);
+
+    const existingData = await getExistingDatabaseData(env);
+    console.log("기존 DB 데이터 가져오기 완료", existingData.length);
+
+    let { newRecords, deleteRowIDs, insertedNames, deletedNames } = await processRecords(allRecords, existingData);
+    console.log(`새로운 데이터 개수: ${newRecords.length}, 삭제할 데이터 개수: ${deleteRowIDs.length}`);
+
+    // 4. Kakao API를 newRecords에 적용하여 좌표 보강
+    await enrichWithCoordinates(newRecords);
+
+    // 5. DB 업데이트 실행 (삭제 후 삽입)
+    await updateDatabase(env, newRecords, deleteRowIDs);
+
+    console.log("✅ 데이터 처리 완료");
+    return {
+        message: "Database updated",
+        new_records_names: insertedNames,
+        deleted_records_names: deletedNames
+    };
+}
 
 function validate(request, env) {
     const authHeader = request.headers.get("Authorization");
