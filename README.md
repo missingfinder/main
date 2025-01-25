@@ -4,6 +4,7 @@
 
 - [[자료 출처: 경찰청]](https://www.safe182.go.kr/home/api/guide5.do)
 - Note: Bearer token이 없을 경우, 사용불가합니다.
+- 매일 03:00AM(UTC 18:00)에 DB가 refresh됩니다. (Currently lack of lock mechanism)
 
 ## 1. 실종자 데이터 저장 및 갱신 Worker
 
