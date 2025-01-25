@@ -1,4 +1,4 @@
-name = "geo-missing-lookup"
+name = "geo-missing-lookup"       # GitHub Actions에서 변경됨
 compatibility_date = "2025-01-25"
 main = "worker.js"
 
