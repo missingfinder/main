@@ -1,5 +1,6 @@
 name = "missingproxy"
 compatibility_date = "2025-01-24"
+main = "worker.js"
 
 [[d1_databases]]
 binding = "DB"
