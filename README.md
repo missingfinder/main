@@ -38,9 +38,17 @@ done
 > https://geo-missing-lookup.missingfinder-kr.workers.dev
 
 ### 작동 방식
-	1.	사용자가 x, y 좌표를 입력합니다.
-	2.	D1 데이터베이스에서 Haversine 공식을 이용하여 반경 내에 포함된 실종자 데이터를 검색합니다.
-	3.	최대 반환할 인원 수(max_people)를 기준으로 정렬하여 데이터를 반환합니다.
+1.	사용자가 x, y 좌표를 입력합니다.
+2.	D1 데이터베이스에서 Haversine 공식을 이용하여 반경 내에 포함된 실종자 데이터를 검색합니다.
+3.	최대 반환할 인원 수(max_people)를 기준으로 정렬하여 데이터를 반환합니다.
+
+
+```js
+const x = parseFloat(url.searchParams.get("x"));
+const y = parseFloat(url.searchParams.get("y"));
+const max_people = parseInt(url.searchParams.get("max_people")) || 10;
+const threshold_km = parseFloat(url.searchParams.get("threshold_km")) || 5;
+```
 
 
 <script type="text/javascript" async
