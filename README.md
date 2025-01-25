@@ -42,24 +42,23 @@ done
 	2.	D1 데이터베이스에서 Haversine 공식을 이용하여 반경 내에 포함된 실종자 데이터를 검색합니다.
 	3.	최대 반환할 인원 수(max_people)를 기준으로 정렬하여 데이터를 반환합니다.
 
-
-### Haversine 공식 (구면 코사인 법칙)
-
 <script type="text/javascript" async
   src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
 
+
+## Haversine 공식 (구면 코사인 법칙)
+
 두 좌표 $(\phi_1, \lambda_1)$, $(\phi_2, \lambda_2)$ 사이의 거리를 계산하는 공식은 다음과 같습니다.
 
-$$
-d = R \cdot \cos^{-1} \left( \sin \phi_1 \sin \phi_2 + \cos \phi_1 \cos \phi_2 \cos (\lambda_2 - \lambda_1) \right)
-$$
+$$ d = R \cdot \cos^{-1} \left( \sin \phi_1 \sin \phi_2 + \cos \phi_1 \cos \phi_2 \cos (\lambda_2 - \lambda_1) \right) $$
 
 여기서:
 - $d$ : 두 지점 간 거리 (km)
 - $R$ : 지구 반지름 (약 6371 km)
 - $\phi_1, \phi_2$ : 위도 (radian)
 - $\lambda_1, \lambda_2$ : 경도 (radian)
+
 
 ### SQL 쿼리 (Haversine 공식 적용)
 
