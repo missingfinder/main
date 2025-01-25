@@ -2,14 +2,21 @@ title: Missing Person Finder
 description: 실종자 데이터를 Cloudflare Workers를 통해 수집 및 조회하는 프로젝트
 theme: jekyll-theme-minimal
 
+# Markdown 및 MathJax 설정
 markdown: kramdown
 kramdown:
   math_engine: mathjax
   input: GFM
 
+# GitHub Pages 플러그인 추가
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
+  - jekyll-readme-index
 
-show_downloads: false
-google_analytics: false
+# README.md를 index.html로 변환
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
