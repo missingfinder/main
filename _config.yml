@@ -8,15 +8,15 @@ kramdown:
   math_engine: mathjax
   input: GFM
 
-# GitHub Pages 플러그인 추가
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
+  - jekyll-feed
   - jekyll-readme-index
 
-# README.md를 index.html로 변환
 defaults:
   - scope:
       path: ""
     values:
       layout: "default"
+      permalink: "/index.html"
