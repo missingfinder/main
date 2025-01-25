@@ -1,0 +1,8 @@
+name = "geo-missing-lookup"
+compatibility_date = "2025-01-25"
+main = "worker.js"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "missing_db"
+database_id = "21b7023e-b9ee-4e7a-b6f1-b14f1d004fff"

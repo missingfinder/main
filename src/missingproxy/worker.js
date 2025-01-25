@@ -36,11 +36,12 @@ export default {
 };
 
 
+function validate(request, env) {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader) return false;
 
-function validate(env) {
-    const url = new URL(request.url);
-    const requestPassword = url.searchParams.get("password");
-    return requestPassword && requestPassword === env.WORKER_SECRET_PASSWORD;
+    const expectedSecret = `Bearer ${env.WORKER_SECRET_PASSWORD}`;
+    return authHeader === expectedSecret;
 }
 
 
