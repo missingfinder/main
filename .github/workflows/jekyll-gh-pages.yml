@@ -27,8 +27,11 @@ jobs:
           source: ./
           destination: ./_site
 
-      - name: Rename README.html to index.html
-        run: mv _site/README.html _site/index.html
+      - name: Change file permissions
+        run: chmod +w _site/README.html || true
+
+      - name: Copy README.html to index.html
+        run: cp _site/README.html _site/index.html
 
       - name: Check _site folder contents
         run: ls -la _site # _site 내부에 index.html이 생성되었는지 확인
