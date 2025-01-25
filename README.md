@@ -6,7 +6,7 @@
 
 ## 1. 실종자 데이터 저장 및 갱신 Worker
 
-> https://missingproxy.missingfinder-kr.workers.dev/
+> https://missingproxy.missingfinder-kr.workers.dev
 
 ### 작동 방식
 
@@ -35,7 +35,7 @@ done
 ```
 
 ## 2. 실종자 위치 기반 조회 Worker
-> https://geo-missing-lookup.missingfinder-kr.workers.dev/
+> https://geo-missing-lookup.missingfinder-kr.workers.dev
 
 ### 작동 방식
 	1.	사용자가 x, y 좌표를 입력합니다.
@@ -49,16 +49,25 @@ done
 
 ## Haversine 공식 (구면 코사인 법칙)
 
-두 좌표 $(\phi_1, \lambda_1)$, $(\phi_2, \lambda_2)$ 사이의 거리를 계산하는 공식은 다음과 같습니다.
+두 좌표 $ (\phi_1, \lambda_1) $, $ (\phi_2, \lambda_2) $ 사이의 거리를 계산하는 공식은 다음과 같습니다.
 
-$$ d = R \cdot \cos^{-1} \left( \sin \phi_1 \sin \phi_2 + \cos \phi_1 \cos \phi_2 \cos (\lambda_2 - \lambda_1) \right) $$
 
-여기서:
-- $d$ : 두 지점 간 거리 (km)
-- $R$ : 지구 반지름 (약 6371 km)
-- $\phi_1, \phi_2$ : 위도 (radian)
-- $\lambda_1, \lambda_2$ : 경도 (radian)
+$$
+d = R \cdot \cos^{-1} \left( \sin \phi_1 \sin \phi_2 + \cos \phi_1 \cos \phi_2 \cos (\lambda_2 - \lambda_1) \right)
+$$
 
+<center>
+
+$ d $ : 두 지점 간 거리 (km) 
+
+$ R $ : 지구 반지름 (약 6371 km)
+
+$ \phi_1, \phi_2 $: 위도 (radian)
+
+$ \lambda_1, \lambda_2 $: 경도 (radian)
+
+
+</center>
 
 ### SQL 쿼리 (Haversine 공식 적용)
 
