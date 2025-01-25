@@ -1,14 +1,16 @@
 # Missing Person Finder
 
-이 프로젝트는 실종자 데이터를 수집, 저장 및 조회하는 Cloudflare Workers 기반의 서비스입니다.
+이 프로젝트는 실종자 데이터를 수집, 저장 및 조회하는 Cloudflare Workers 기반의 서비스입니다. 
 
-> Note: Bearer token이 없을 경우, 사용불가합니다.
+- [[자료 출처: 경찰청]](https://www.safe182.go.kr/home/api/guide5.do)
+- Note: Bearer token이 없을 경우, 사용불가합니다.
 
 ## 1. 실종자 데이터 저장 및 갱신 Worker
 
 > https://missingproxy.missingfinder-kr.workers.dev
 
 ### 작동 방식
+
 
 1. 경찰청 OpenAPI에서 실종자 데이터를 페이지네이션을 이용해 수집합니다.  
    - **제약사항:** 하루 1000건의 요청 제한이 있으며, 데이터 갱신 여부를 알 수 있는 API가 제공되지 않습니다.
