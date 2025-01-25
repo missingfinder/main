@@ -52,6 +52,7 @@ export default {
     }
 };
 
+
 function validate(request, env) {
     const authHeader = request.headers.get("Authorization");
     if (!authHeader) return false;
