@@ -142,10 +142,10 @@ async function processRecords(allRecords, existingData) {
 
   function preprocessRecord(record) {
     return {
-      msspsnIdntfccd: record.msspsnIdntfccd?.trim(),
+      msspsnIdntfccd: record.msspsnIdntfccd,
       nm: clean(record.nm?.trim()),
-      ageNow: record.ageNow?.trim(),
-      age: record.age?.trim(),
+      ageNow: record.ageNow,
+      age: record.age,
       occrde: clean(record.occrde?.trim()),
       alldressingDscd: clean(record.alldressingDscd?.trim()),
       writngTrgetDscd: clean(record.writngTrgetDscd?.trim()),
