@@ -215,39 +215,148 @@ async function processRecords(allRecords, existingData) {
 /**
  * 4. Kakao API를 newRecords에만 적용
  */
+
 async function enrichWithCoordinates(records, env) {
-  const KAKAO_API_KEY = `KakaoAK ${env.KAKAO_REST_API_KEY}`;
-  const DEFAULT_X = 126.9764;
-  const DEFAULT_Y = 37.5867;
+  function parseAddressString(rawAddress) {
+    /**
+     * 주소 파싱 함수
+     *  1) 괄호 안 문자열 삭제
+     *  2) 콤마(,) 처리: 콤마 앞 글자수가 5글자 초과이면 콤마 이전만 남김
+     *  3) 중간/끝에 등장하는 토큰(공백 포함) 제거
+     *  4) 접미어(Suffix) 제거
+     */
+    if (!rawAddress) return "";
 
-  async function fetchCoordinates(location) {
-    if (!location || location.trim() === "")
-      return { x: DEFAULT_X, y: DEFAULT_Y };
+    let address = rawAddress.trim();
 
-    try {
-      let url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(
-        location
-      )}`;
-      let response = await fetch(url, {
-        headers: { Authorization: KAKAO_API_KEY },
-      });
-      let data = await response.json();
+    // 1) 괄호 안 문자열 모두 제거 (i.e., "서울 (딸 집)" -> "서울")
+    address = address.replace(/\([^)]*\)/g, "").trim();
 
-      if (data.documents && data.documents.length > 0) {
-        return {
-          x: parseFloat(data.documents[0].x),
-          y: parseFloat(data.documents[0].y),
-        };
-      }
-    } catch (error) {
-      console.error(`Error fetching coordinates for ${location}:`, error);
+    // 2) 콤마(,) 앞 글자 수가 5글자 이상이면 콤마 이전만 사용
+    const commaIndex = address.indexOf(",");
+    if (commaIndex !== -1 && commaIndex >= 5) {
+      address = address.substring(0, commaIndex).trim();
     }
-    return { x: DEFAULT_X, y: DEFAULT_Y };
+
+    // 3) (중간/끝) 특정 단어(공백 포함) 제거
+    const middleTokens = [
+      " 소재",
+      " 부근",
+      " 시장내",
+      " 노상",
+      " 바닷가",
+      " 정문",
+      " 주소지",
+      " 내",
+      " 일대",
+      " 지하도",
+      " 남단",
+      " 북단",
+      " 앞",
+      " 뒤",
+      " 후문",
+      " 근방",
+      " 근처",
+    ];
+
+    middleTokens.forEach((token) => {
+      // token이 등장할 때마다 전부 제거
+      // 예: "군산 남단" -> "군산"
+      while (address.includes(token)) {
+        address = address.replace(token, "").trim();
+      }
+    });
+
+    // 4) 접미어(suffix) 목록
+    const suffixes = [
+      "소재",
+      "부근",
+      "시장내",
+      "노상",
+      "바닷가",
+      "정문",
+      "주소지",
+      "일대",
+      "남단",
+      "북단",
+      "근방",
+      "근처",
+      "내",
+      "앞",
+      "뒤",
+    ];
+
+    let replaced = true;
+    while (replaced) {
+      replaced = false;
+      for (const suffix of suffixes) {
+        if (address.endsWith(suffix)) {
+          // suffix 길이만큼 잘라내기
+          address = address.slice(0, address.length - suffix.length).trim();
+          replaced = true;
+        }
+      }
+    }
+
+    return address.trim();
+  }
+  async function fetchCoordinates(location, KAKAO_API_KEY) {
+    const url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(
+      location
+    )}&page=1&size=1`;
+    const response = await fetch(url, {
+      headers: { Authorization: KAKAO_API_KEY },
+    });
+
+    const data = await response.json();
+    if (data.documents && data.documents.length > 0) {
+      return {
+        success: true,
+        x: parseFloat(data.documents[0].x),
+        y: parseFloat(data.documents[0].y),
+      };
+    }
+    return { success: false };
+  }
+
+  async function fetchCoordinatesWithRetry(location, env) {
+    const KAKAO_API_KEY = `KakaoAK ${env.KAKAO_REST_API_KEY}`;
+    const DEFAULT_X = 126.9764;
+    const DEFAULT_Y = 37.5867;
+    if (!location || location.trim() === "") {
+      console.log(`1: ${location}`);
+      return { x: DEFAULT_X, y: DEFAULT_Y };
+    }
+
+    // 1차 조회
+    const first = await fetchCoordinates(location, KAKAO_API_KEY);
+    if (first.success) {
+      return { x: first.x, y: first.y };
+    } else {
+      // Kakao API에서 못 찾았을 경우
+      if (location.length <= 5) {
+        // 5글자 이하: 기본 좌표
+        console.log(`2: ${location}`);
+        return { x: DEFAULT_X, y: DEFAULT_Y };
+      } else {
+        // 6글자 이상: 재조회 시도
+        const nextQuery = location.substring(0, 6).trim();
+        if (nextQuery && nextQuery !== location) {
+          const second = await fetchCoordinates(nextQuery, KAKAO_API_KEY);
+          if (second.success) {
+            return { x: second.x, y: second.y };
+          }
+        }
+        console.log(`3: ${nextQuery}`);
+        return { x: DEFAULT_X, y: DEFAULT_Y };
+      }
+    }
   }
 
   for (const record of records) {
-    const coords = await fetchCoordinates(record.occrAdres);
-    record.incident_location = coords.address_name;
+    const parsedAddress = parseAddressString(record.occrAdres);
+    const coords = await fetchCoordinatesWithRetry(parsedAddress, env);
+    // record.incident_location = parsedAddress;
     record.incident_x = coords.x;
     record.incident_y = coords.y;
   }
