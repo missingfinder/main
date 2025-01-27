@@ -21,6 +21,7 @@ async function process(env) {
     console.log("시작: 실종자 데이터 처리");
     const allRecords = await fetchMissingPersonsData(env);
     console.log("API 데이터 수집 완료", allRecords.length);
+    console.log(allRecords);
 
     const existingData = await getExistingDatabaseData(env);
     console.log("기존 DB 데이터 가져오기 완료", existingData.length);
@@ -180,7 +181,7 @@ async function enrichWithCoordinates(records, env) {
         if (!location || location.trim() === "") return { x: DEFAULT_X, y: DEFAULT_Y };
 
         try {
-            let url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(location.trim())}`;
+            let url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(clean(location.trim()))}`;
             let response = await fetch(url, { headers: { Authorization: KAKAO_API_KEY } });
             let data = await response.json();
 
@@ -201,13 +202,19 @@ async function enrichWithCoordinates(records, env) {
     }
 }
 
+function clean(value) {
+    if (!value) return value;
+    return value.replace(/^['"`]+|['"`]+$/g, '');
+}
+
 /**
  * 5. DB 업데이트 (삭제 후 삽입)
  */
 function escapeSQL(value) {
     if (value === null || value === undefined || value.trim() === '') return "NULL";
-    return `'${value.replace(/'/g, "''").replace(/\n/g, ' ').replace(/\r/g, '').replace(/\t/g, ' ')}'`;
+    return clean(`'${value.replace(/'/g, "''").replace(/\n/g, ' ').replace(/\r/g, '').replace(/\t/g, ' ')}'`);
 }
+
 
 async function updateDatabase(env, newRecords, deleteRowIDs) {
     const BATCH_SIZE = 3;
