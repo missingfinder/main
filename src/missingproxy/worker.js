@@ -29,7 +29,7 @@ async function process(env) {
     console.log(`새로운 데이터 개수: ${newRecords.length}, 삭제할 데이터 개수: ${deleteRowIDs.length}`);
 
     // 4. Kakao API를 newRecords에 적용하여 좌표 보강
-    await enrichWithCoordinates(newRecords);
+    await enrichWithCoordinates(newRecords, env);
 
     // 5. DB 업데이트 실행 (삭제 후 삽입)
     await updateDatabase(env, newRecords, deleteRowIDs);
