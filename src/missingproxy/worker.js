@@ -134,6 +134,11 @@ async function getExistingDatabaseData(env) {
 /**
  * 3. 데이터 비교 후 newRecords와 deleteRowIDs 얻기
  */
+function clean(value) {
+  if (!value) return value;
+  return value.replace(/^['"`]+|['"`]+$/g, "");
+}
+
 async function processRecords(allRecords, existingData) {
   let newRecords = [];
   let deleteRowIDs = [];
