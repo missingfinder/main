@@ -1,4 +1,28 @@
-# Missing Person Finder
+# Look Around
+> "잠깐, 주변을 한번 둘러봐주세요".
+
+**한국인 대부분이라면 한 번쯤은 경보 문자를 받아보셨을 겁니다.** 문자가 너무 많이 와서 불편함을 느낄 때도 있지만, 종종 어린 나이에 실종되는 경우를 볼 때면, 찾고 있을 가족들 생각에 안타깝기도 합니다.
+
+<img src="./assets/sms.png" alt="SMS" style="display: block; margin: 0 auto; width: 40%; padding:10px;">
+
+
+과거 실종자 링크를 클릭해보았더니, `네이버 블로그`가 나왔습니다. 전국민들에게 실종 문자를 보내는 것 치고는 개선의 여지가 있다는 생각이 들었습니다. "나라면 뭘 개선할 수 있을까?" 시민들이 이동 중일 때, **근처에 실종 신고된 사람**이 있다면 **앱 푸시 알림**으로 알려주고, **신상정보를 토대로 주변을 살펴볼 수 있도록** 만들면 매우 효율적일 것이라는 생각이 들었습니다. 한편으로는 "만들면 누가 쓸려나..? 서버비는 어떻게 하지..? 앱은 어떻게 만들지..?"라는 고민에 다시 일상으로 돌아갔습니다.
+
+<img src="./assets/blog.png" alt="SMS" style="display: block; margin: 0 auto; width: 40%;padding:10px;">
+
+그러던 어느 날, 링크드인에서 비슷한 방향성의 고민을 하는 [종원님의 글](https://www.linkedin.com/posts/jongwon-park-41a170177_%EB%8B%B9%EC%8B%A0%EC%9D%98-%EC%98%A4%EB%A5%B8%EC%AA%BD%EC%9D%84-1%EC%B4%88%EB%A7%8C-%ED%99%95%EC%9D%B8%ED%95%B4-%EC%A3%BC%EC%84%B8%EC%9A%94-%EC%96%B4%EB%8A%90-%EB%82%A0-%EB%AC%B8%EB%93%9D-%EB%B2%84%EC%8A%A4-%EC%A0%95%EB%A5%98%EC%9E%A5%EC%97%90-%EC%95%89%EC%95%84-activity-7287727556953284608-mbE3/?originalSubdomain=kr)을 접하면서, "누군가도 나와 같이 어떻게 개선할 수 있을지 고민하고 있구나"라는 생각에 동기부여를 받았습니다. 마침 설날이 다가오기도 하여, 앱 개발자이신 강민님과 함께 빠르게 MVP를 제작하게 되었고, 이제 피드백을 받아보려고 합니다.
+
+<img src="./assets/idea.png" alt="SMS" style="display: block; margin: 0 auto; width: 60%;padding:10px;">
+
+`Look Around` 앱은 사용자가 이동하는 동안, 주변에 신고된 실종자가 존재하면 이를 알려줍니다. 이 알림을 받은 사용자는 제공된 실종자 신상정보를 토대로 잠시 주변을 둘러보며 상황을 확인할 수 있도록 설계되었습니다. 
+
+**만약 LookAround의 이 아이디어에 공감을 하신다면, 사용해보시고 피드백 주신다면 감사하겠습니다.**
+
+
+
+
+## Worker Design
+> https://github.com/missingfinder/missingfinder
 
 이 프로젝트는 실종자 데이터를 수집, 저장 및 조회하는 Cloudflare Workers 기반의 서비스입니다. 
 
